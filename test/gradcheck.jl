@@ -130,6 +130,25 @@ end
   @test gradtest(A->logdet(cholesky(A' * A + 1e-6I)), A)
 end
 
+@testset "Cholesky (getproperty)" begin
+  rng, N = MersenneTwister(123456), 5
+  A = randn(rng, N, N)
+  S = A' * A + 1e-6I
+  C = cholesky(S)
+
+  # Check that non-differentiable ops run forwards and have `nothing` gradients.
+  _, back = Zygote.forward(C->C.info, C)
+  @test back(1)[1] == (uplo=nothing, info=nothing, factors=nothing)
+  _, back = Zygote.forward(C->C.uplo, C)
+  @test back(1)[1] == (uplo=nothing, info=nothing, factors=nothing)
+
+  # Test getproperty.
+  @test gradtest(A->Cholesky(A, :U, 0).U, A)
+  @test gradtest(A->Cholesky(A, :U, 0).L, A)
+  @test gradtest(A->Cholesky(A, :L, 0).U, A)
+  @test gradtest(A->Cholesky(A, :L, 0).L, A)
+end
+
 using Distances
 
 Zygote.refresh()
