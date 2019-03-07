@@ -157,7 +157,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "Closure Conversion",
     "category": "section",
-    "text": "There are no closures in lowered Julia code, so we can\'t actually emit one directly in lowered code. To work around this we have a trick: we have a generic struct likestruct Pullback{F}\n  data\nendWe can put whatever we want in data, and the F will be the signature for the original call, like Tuple{typeof(foo),Int}. When the pullback gets called it hits another generated function which emit the pullback code.In hand written code this would look like:struct Pullback{F}\n  data\nend\n\nfunction J(::typeof(foo), x)\n  a, da = J(sin, x)\n  b, db = J(cos, a)\n  return b, Pullback{typeof(foo)}((da, db))\nend\n\n(p::Pullback{typeof(foo)})(b̄) = p.data[1](p.data[2](b̄))"
+    "text": "There are no closures in lowered Julia code, so we can\'t actually emit one directly in lowered code. To work around this we have a trick: we have a generic struct likestruct Pullback{F}\n  data\nendWe can put whatever we want in data, and the F will be the signature for the original call, like Tuple{typeof(foo),Int}. When the pullback gets called it hits another generated function which emits the pullback code.In hand written code this would look like:struct Pullback{F}\n  data\nend\n\nfunction J(::typeof(foo), x)\n  a, da = J(sin, x)\n  b, db = J(cos, a)\n  return b, Pullback{typeof(foo)}((da, db))\nend\n\n(p::Pullback{typeof(foo)})(b̄) = p.data[1](p.data[2](b̄))"
 },
 
 {
