@@ -97,22 +97,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "debugging/#",
-    "page": "Debugging",
-    "title": "Debugging",
-    "category": "page",
-    "text": ""
-},
-
-{
-    "location": "debugging/#Debugging-1",
-    "page": "Debugging",
-    "title": "Debugging",
-    "category": "section",
-    "text": "WIP"
-},
-
-{
     "location": "profiling/#",
     "page": "Profiling",
     "title": "Profiling",
