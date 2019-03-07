@@ -93,7 +93,31 @@ var documenterSearchIndex = {"docs": [
     "page": "Custom Adjoints",
     "title": "Advanced Adjoints",
     "category": "section",
-    "text": "We usually use custom adjoints to add gradients that Zygote can\'t derive itself (for example, because they ccall to BLAS). But there are some more advanced and fun things we can to with @adjoint.julia> hook(f, x) = x\nhook (generic function with 1 method)\n\njulia> @adjoint hook(f, x) = x, x̄ -> (nothing, f(x̄))hook doesn\'t seem that interesting, as it doesn\'t do anything. But the fun part is in the adjoint; it\'s allowing us to apply a function f to the gradient of x.julia> gradient((a, b) -> hook(-, a)*b, 2, 3)\n(-3, 2)We could use this for debugging or modifying gradients (e.g. gradient clipping).julia> gradient((a, b) -> hook(ā -> @show(ā), a)*b, 2, 3)\nā = 3\n(3, 2)Zygote provides both hook and @showgrad so you don\'t have to write these yourself.A more advanced example is checkpointing, in which we save memory by re-computing the forward pass of a function during the backwards pass. To wit:julia> checkpoint(f, x) = f(x)\ncheckpoint (generic function with 1 method)\n\njulia> @adjoint checkpoint(f, x) = f(x), ȳ -> (nothing, Zygote.forward(f, x)[2](ȳ)...)\n\njulia> gradient(x -> checkpoint(sin, x), 1)\n(0.5403023058681398,)If a function has side effects we\'ll see that the forward pass happens twice, as expected.julia> foo(x) = (println(x); sin(x))\nfoo (generic function with 1 method)\n\njulia> gradient(x -> checkpoint(foo, x), 1)\n1\n1\n(0.5403023058681398,)"
+    "text": "We usually use custom adjoints to add gradients that Zygote can\'t derive itself (for example, because they ccall to BLAS). But there are some more advanced and fun things we can to with @adjoint."
+},
+
+{
+    "location": "adjoints/#Gradient-Hooks-1",
+    "page": "Custom Adjoints",
+    "title": "Gradient Hooks",
+    "category": "section",
+    "text": "julia> hook(f, x) = x\nhook (generic function with 1 method)\n\njulia> @adjoint hook(f, x) = x, x̄ -> (nothing, f(x̄))hook doesn\'t seem that interesting, as it doesn\'t do anything. But the fun part is in the adjoint; it\'s allowing us to apply a function f to the gradient of x.julia> gradient((a, b) -> hook(-, a)*b, 2, 3)\n(-3, 2)We could use this for debugging or modifying gradients (e.g. gradient clipping).julia> gradient((a, b) -> hook(ā -> @show(ā), a)*b, 2, 3)\nā = 3\n(3, 2)Zygote provides both hook and @showgrad so you don\'t have to write these yourself."
+},
+
+{
+    "location": "adjoints/#Checkpointing-1",
+    "page": "Custom Adjoints",
+    "title": "Checkpointing",
+    "category": "section",
+    "text": "A more advanced example is checkpointing, in which we save memory by re-computing the forward pass of a function during the backwards pass. To wit:julia> checkpoint(f, x) = f(x)\ncheckpoint (generic function with 1 method)\n\njulia> @adjoint checkpoint(f, x) = f(x), ȳ -> (nothing, Zygote.forward(f, x)[2](ȳ)...)\n\njulia> gradient(x -> checkpoint(sin, x), 1)\n(0.5403023058681398,)If a function has side effects we\'ll see that the forward pass happens twice, as expected.julia> foo(x) = (println(x); sin(x))\nfoo (generic function with 1 method)\n\njulia> gradient(x -> checkpoint(foo, x), 1)\n1\n1\n(0.5403023058681398,)"
+},
+
+{
+    "location": "adjoints/#Gradient-Reflection-1",
+    "page": "Custom Adjoints",
+    "title": "Gradient Reflection",
+    "category": "section",
+    "text": "It\'s easy to check whether the code we\'re running is currently being differentiated.isderiving() = false\n\n@adjoint isderiving() = true, _ -> nothingA more interesting example is to actually detect how many levels of nesting are going on.nestlevel() = 0\n\n@adjoint nestlevel() = nestlevel()+1, _ -> nothingDemo:julia> function f(x)\n         println(nestlevel(), \" levels of nesting\")\n         return x\n       end\nf (generic function with 1 method)\n\njulia> grad(f, x) = gradient(f, x)[1]\ngrad (generic function with 1 method)\n\njulia> f(1);\n0 levels of nesting\n\njulia> grad(f, 1);\n1 levels of nesting\n\njulia> grad(x -> x*grad(f, x), 1);\n2 levels of nesting"
 },
 
 {
