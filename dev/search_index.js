@@ -125,7 +125,47 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "Internals",
     "category": "section",
-    "text": "WIP"
+    "text": ""
+},
+
+{
+    "location": "internals/#What-Zygote-Does-1",
+    "page": "Internals",
+    "title": "What Zygote Does",
+    "category": "section",
+    "text": "These notebooks and the Zygote paper provide useful background on Zygote\'s transform; this page is particularly focused on implementation details.Given a function likefunction foo(x)\n  a = bar(x)\n  b = baz(a)\n  return b\nendhow do we differentiate it? The key is that we can differentiate foo if we can differentiate bar and baz. If we assume we can get pullbacks for those functions, the pullback for foo looks as follows.function J(::typeof(foo), x)\n  a, da = J(bar, x)\n  b, db = J(baz, a)\n  return b, b̄ -> da(db(b̄))\nendThus, where the forward pass calculates x -> a -> b, the backwards takes b̄ -> ā -> x̄ via the pullbacks. The AD transform is recursive; we\'ll differentiate bar and baz in the same way, until we hit a case where gradient is explicitly defined.Here\'s a working example that illustrates the concepts.J(::typeof(sin), x) = sin(x), ȳ -> ȳ*cos(x)\nJ(::typeof(cos), x) = cos(x), ȳ -> -ȳ*sin(x)\n\nfoo(x) = sin(cos(x))\n\nfunction J(::typeof(foo), x)\n  a, da = J(sin, x)\n  b, db = J(cos, a)\n  return b, b̄ -> da(db(b̄))\nend\n\ngradient(f, x) = J(f, x)[2](1)\n\ngradient(foo, 1)Now, clearly this is a mechanical transformation, so the only remaining thing is to automate it – a small matter of programming."
+},
+
+{
+    "location": "internals/#Closures-1",
+    "page": "Internals",
+    "title": "Closures",
+    "category": "section",
+    "text": "The J function here corresponds to forward in Zygote. However, forward actually a wrapper around the lower level _forward function.julia> y, back = Zygote._forward(sin, 0.5);\n\njulia> back(1)\n(nothing, 0.8775825618903728)Why the extra nothing here? This actually represents the gradient of the function sin. This is often nothing, but when we have closures the function contains data we need gradients for.julia> f = let a = 3; x -> x*a; end\n#19 (generic function with 1 method)\n\njulia> y, back = Zygote._forward(f, 2);\n\njulia> back(1)\n((a = 2,), 3)This is a minor point for the most part, but _forward will come up in future examples."
+},
+
+{
+    "location": "internals/#Entry-Points-1",
+    "page": "Internals",
+    "title": "Entry Points",
+    "category": "section",
+    "text": "We could do this transform with a macro, but don\'t want to require that all differentiable code is annotated. Instead a generated function gets us much of the power of a macro without this annotation, because we can use it to get lowered code for a function. We can then modify the code as we please and return it to implement J(foo, x).julia> foo(x) = baz(bar(x))\nfoo (generic function with 1 method)\n\njulia> @code_lowered foo(1)\nCodeInfo(\n1 ─ %1 = (Main.bar)(x)\n│   %2 = (Main.baz)(%1)\n└──      return %2We convert the code to SSA form using Julia\'s built-in IR data structure, after which it looks like this.julia> Zygote.@code_ir foo(1)\n1 1 ─ %1 = (Main.bar)(_2)::Any\n  │   %2 = (Main.baz)(%1)::Any\n  └──      return %2    (There isn\'t much difference unless there\'s some control flow.)The code is then differentiated by the code in compiler/reverse.jl. You can see the output with @code_adjoint.julia> Zygote.@code_adjoint foo(1)\n1 1 ─ %1  = (Zygote._forward)(_2, Zygote.unwrap, Main.bar)::Any\n  │   %2  = (Base.getindex)(%1, 1)::Any\n  │         (Base.getindex)(%1, 2)::Any\n  │   %4  = (Zygote._forward)(_2, %2, _4)::Any\n  │   %5  = (Base.getindex)(%4, 1)::Any\n  │         (Base.getindex)(%4, 2)::Any\n  │   %7  = (Zygote._forward)(_2, Zygote.unwrap, Main.baz)::Any\n  │   %8  = (Base.getindex)(%7, 1)::Any\n  │         (Base.getindex)(%7, 2)::Any\n  │   %10 = (Zygote._forward)(_2, %8, %5)::Any\n  │   %11 = (Base.getindex)(%10, 1)::Any\n  │         (Base.getindex)(%10, 2)::Any\n  └──       return %11\n  1 ─ %1  = Δ()::Any\n1 │   %2  = (@12)(%1)::Any\n  │   %3  = (Zygote.gradindex)(%2, 1)::Any\n  │   %4  = (Zygote.gradindex)(%2, 2)::Any\n  │         (@9)(%3)::Any\n  │   %6  = (@6)(%4)::Any\n  │   %7  = (Zygote.gradindex)(%6, 1)::Any\n  │   %8  = (Zygote.gradindex)(%6, 2)::Any\n  │         (@3)(%7)::Any\n  │   %10 = (Zygote.tuple)(nothing, %8)::Any\n  └──       return %10\n, [1])This code is quite verbose, mainly due to all the tuple unpacking (gradindex is just like getindex, but handles nothing gracefully). The are two pieces of IR here, one for the modified forward pass and one for the pullback closure. The @ nodes allow the closure to refer to values from the forward pass, and the Δ() represents the incoming gradient ȳ. In essence, this is just what we wrote above by hand for J(::typeof(foo), x).compiler/emit.jl lowers this code into runnable IR (e.g. by turning @ references into getfields and stacks), and it\'s then turned back into lowered code for Julia to run."
+},
+
+{
+    "location": "internals/#Closure-Conversion-1",
+    "page": "Internals",
+    "title": "Closure Conversion",
+    "category": "section",
+    "text": "There are no closures in lowered Julia code, so we can\'t actually emit one directly in lowered code. To work around this we have a trick: we have a generic struct likestruct Pullback{F}\n  data\nendWe can put whatever we want in data, and the F will be the signature for the original call, like Tuple{typeof(foo),Int}. When the pullback gets called it hits another generated function which emit the pullback code.In hand written code this would look like:struct Pullback{F}\n  data\nend\n\nfunction J(::typeof(foo), x)\n  a, da = J(sin, x)\n  b, db = J(cos, a)\n  return b, Pullback{typeof(foo)}((da, db))\nend\n\n(p::Pullback{typeof(foo)})(b̄) = p.data[1](p.data[2](b̄))"
+},
+
+{
+    "location": "internals/#Debugging-1",
+    "page": "Internals",
+    "title": "Debugging",
+    "category": "section",
+    "text": "Say some of our code is throwing an error.bad(x) = x\n\nZygote.@adjoint bad(x) = x, _ -> error(\"bad\")\n\nfoo(x) = bad(sin(x))\n\ngradient(foo, 1) # error!Zygote can usually give a stacktrace pointing right to the issue here, but in some cases there are compiler crashes that make this harder. In these cases it\'s best to (a) use _forward and (b) take advantage of Zygote\'s recursion to narrow down the problem function.julia> y, back = Zygote._forward(foo, 1);\n\njulia> back(1) # just make up a value here, it just needs to look similar to `y`\nERROR: bad\n\n# Ok, so we try functions that foo calls\n\njulia> y, back = Zygote._forward(sin, 1);\n\njulia> back(1)\n(nothing, 0.5403023058681398)\n\n# Looks like that\'s fine\n\njulia> y, back = Zygote._forward(bad, 1);\n\njulia> back(1) # ok, here\'s our issue. Lather, rinse, repeat.\nERROR: badOf course, our goal is that you never have to do this, but until Zygote is more mature it can be a useful way to narrow down test cases."
 },
 
 ]}
