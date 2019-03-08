@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Setup",
     "category": "section",
-    "text": "Zygote is still moving quickly and it\'s best to work from the development branches. Run this in a Julia session:using Pkg; pkg\"add Zygote#master IRTools#master\""
+    "text": "Zygote is still moving quickly and it\'s best to work from the development branches. Run this in a Julia session:using Pkg; pkg\"add Zygote#master\""
 },
 
 {
