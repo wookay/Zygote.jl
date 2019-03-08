@@ -69,7 +69,7 @@ julia&gt; @adjoint hook(f, x) = x, x̄ -&gt; (nothing, f(x̄))</code></pre><p><c
 (3, 2)</code></pre><p>Zygote provides both <code>hook</code> and <code>@showgrad</code> so you don&#39;t have to write these yourself.</p><h3><a class="nav-anchor" id="Checkpointing-1" href="#Checkpointing-1">Checkpointing</a></h3><p>A more advanced example is checkpointing, in which we save memory by re-computing the forward pass of a function during the backwards pass. To wit:</p><pre><code class="language-julia">julia&gt; checkpoint(f, x) = f(x)
 checkpoint (generic function with 1 method)
 
-julia&gt; @adjoint checkpoint(f, x) = f(x), ȳ -&gt; (nothing, Zygote.forward(f, x)[2](ȳ)...)
+julia&gt; @adjoint checkpoint(f, x) = f(x), ȳ -&gt; Zygote._forward(f, x)[2](ȳ)
 
 julia&gt; gradient(x -&gt; checkpoint(sin, x), 1)
 (0.5403023058681398,)</code></pre><p>If a function has side effects we&#39;ll see that the forward pass happens twice, as expected.</p><pre><code class="language-julia">julia&gt; foo(x) = (println(x); sin(x))

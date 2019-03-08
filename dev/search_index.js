@@ -109,7 +109,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Custom Adjoints",
     "title": "Checkpointing",
     "category": "section",
-    "text": "A more advanced example is checkpointing, in which we save memory by re-computing the forward pass of a function during the backwards pass. To wit:julia> checkpoint(f, x) = f(x)\ncheckpoint (generic function with 1 method)\n\njulia> @adjoint checkpoint(f, x) = f(x), ȳ -> (nothing, Zygote.forward(f, x)[2](ȳ)...)\n\njulia> gradient(x -> checkpoint(sin, x), 1)\n(0.5403023058681398,)If a function has side effects we\'ll see that the forward pass happens twice, as expected.julia> foo(x) = (println(x); sin(x))\nfoo (generic function with 1 method)\n\njulia> gradient(x -> checkpoint(foo, x), 1)\n1\n1\n(0.5403023058681398,)"
+    "text": "A more advanced example is checkpointing, in which we save memory by re-computing the forward pass of a function during the backwards pass. To wit:julia> checkpoint(f, x) = f(x)\ncheckpoint (generic function with 1 method)\n\njulia> @adjoint checkpoint(f, x) = f(x), ȳ -> Zygote._forward(f, x)[2](ȳ)\n\njulia> gradient(x -> checkpoint(sin, x), 1)\n(0.5403023058681398,)If a function has side effects we\'ll see that the forward pass happens twice, as expected.julia> foo(x) = (println(x); sin(x))\nfoo (generic function with 1 method)\n\njulia> gradient(x -> checkpoint(foo, x), 1)\n1\n1\n(0.5403023058681398,)"
 },
 
 {
