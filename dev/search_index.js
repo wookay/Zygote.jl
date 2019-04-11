@@ -201,6 +201,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "flux/#",
+    "page": "Flux",
+    "title": "Flux",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "flux/#Flux-1",
+    "page": "Flux",
+    "title": "Flux",
+    "category": "section",
+    "text": "It\'s easy to use Zygote in place of Flux\'s default AD, Tracker, just by changing Tracker.gradient to Zygote.gradient. The API is otherwise the same.julia> using Flux, Zygote\n\njulia> m = Chain(Dense(10, 5, relu), Dense(5, 2))\nChain(Dense(10, 5, NNlib.relu), Dense(5, 2))\n\njulia> x = rand(10);\n\njulia> gs = gradient(() -> sum(m(x)), params(m))\nGrads(...)\n\njulia> gs[m[1].W]\n5×10 Array{Float32,2}:\n -0.255175  -1.2295   ...You can use optimisers and update gradients as usual.julia> opt = ADAM();\n\njulia> Flux.Optimise.update!(opt, params(m), gs)"
+},
+
+{
     "location": "profiling/#",
     "page": "Profiling",
     "title": "Profiling",
