@@ -121,6 +121,70 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "utils/#",
+    "page": "Utilities",
+    "title": "Utilities",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "utils/#Zygote.@showgrad",
+    "page": "Utilities",
+    "title": "Zygote.@showgrad",
+    "category": "macro",
+    "text": "@showgrad(x) -> x\n\nMuch like @show, but shows the gradient about to accumulate to x. Useful for debugging gradients.\n\njulia> gradient(2, 3) do a, b\n         @showgrad(a)*b\n       end\n∂(a) = 3\n(3, 2)\n\nNote that the gradient depends on how the output of @showgrad is used, and is not the overall gradient of the variable a. For example:\n\njulia> gradient(2) do a\n     @showgrad(a)*a\n   end\n∂(a) = 2\n(4,)\n\njulia> gradient(2, 3) do a, b\n         @showgrad(a) # not used, so no gradient\n         a*b\n       end\n∂(a) = nothing\n(3, 2)\n\n\n\n\n\n"
+},
+
+{
+    "location": "utils/#Zygote.hook",
+    "page": "Utilities",
+    "title": "Zygote.hook",
+    "category": "function",
+    "text": "hook(x̄ -> ..., x) -> x\n\nGradient hooks. Allows you to apply an arbitrary function to the gradient for x.\n\njulia> gradient(2, 3) do a, b\n         hook(ā -> @show(ā), a)*b\n       end\nā = 3\n(3, 2)\n\njulia> gradient(2, 3) do a, b\n         hook(-, a)*b\n       end\n(-3, 2)\n\n\n\n\n\n"
+},
+
+{
+    "location": "utils/#Zygote.dropgrad",
+    "page": "Utilities",
+    "title": "Zygote.dropgrad",
+    "category": "function",
+    "text": "dropgrad(x) -> x\n\nDrop the gradient of x.\n\njulia> gradient(2, 3) do a, b\n     dropgrad(a)*b\n   end\n(nothing, 2)\n\n\n\n\n\n"
+},
+
+{
+    "location": "utils/#Zygote.hessian",
+    "page": "Utilities",
+    "title": "Zygote.hessian",
+    "category": "function",
+    "text": "hessian(f, x)\n\nConstruct the Hessian of f, where x is a real or real array and f(x) is a real.\n\njulia> hessian(((a, b),) -> a*b, [2, 3])\n2×2 Array{Int64,2}:\n 0  1\n 1  0\n\n\n\n\n\n"
+},
+
+{
+    "location": "utils/#Zygote.Buffer",
+    "page": "Utilities",
+    "title": "Zygote.Buffer",
+    "category": "type",
+    "text": "Buffer(xs, ...)\n\nBuffer is an array-like type which is mutable when taking gradients. You can construct a Buffer with the same syntax as similar (e.g. Buffer(xs, 5)) and then use normal indexing. Finally, use copy to get back a normal array.\n\nFor example:\n\njulia> function vstack(xs)\n           buf = Buffer(xs, length(xs), 5)\n           for i = 1:5\n             buf[:, i] = xs\n           end\n           return copy(buf)\n         end\nvstack (generic function with 1 method)\n\njulia> vstack([1, 2, 3])\n3×5 Array{Int64,2}:\n 1  1  1  1  1\n 2  2  2  2  2\n 3  3  3  3  3\n\njulia> gradient(x -> sum(vstack(x)), [1, 2, 3])\n([5.0, 5.0, 5.0],)\n\nBuffer is not an AbstractArray and can\'t be used for linear algebra operations like matrix multiplication. This prevents it from being captured by pullbacks.\n\ncopy is a semantic copy, but does not allocate memory. Instead the Buffer is made immutable after copying.\n\n\n\n\n\n"
+},
+
+{
+    "location": "utils/#Zygote.forwarddiff",
+    "page": "Utilities",
+    "title": "Zygote.forwarddiff",
+    "category": "function",
+    "text": "forwarddiff(f, x) -> f(x)\n\nRuns f(x) as usual, but instructs Zygote to differentiate f using forward mode, rather than the usual reverse mode.\n\nForward mode takes time linear in length(x) but only has constant memory overhead, and is very efficient for scalars, so in some cases this can be a useful optimisation.\n\njulia> function pow(x, n)\n         r = one(x)\n         for i = 1:n\n           r *= x\n         end\n         return r\n       end\npow (generic function with 1 method)\n\njulia> gradient(5) do x\n         forwarddiff(x) do x\n           pow(x, 2)\n         end\n       end\n(10,)\n\nNote that the function f will drop gradients for any closed-over values.\n\njulia> gradient(2, 3) do a, b\n         forwarddiff(a) do a\n           a*b\n         end\n       end\n(3, nothing)\n\nThis can be rewritten by explicitly passing through b, i.e.\n\ngradient(2, 3) do a, b\n  forwarddiff([a, b]) do (a, b)\n    a*b\n  end\nend\n\n\n\n\n\n"
+},
+
+{
+    "location": "utils/#Utilities-1",
+    "page": "Utilities",
+    "title": "Utilities",
+    "category": "section",
+    "text": "Zygote provides a set of helpful utilities. These are all \"user-level\" tools – in other words you could have written them easily yourself, but they live in Zygote for convenience.Zygote.@showgrad\nZygote.hook\nZygote.dropgrad\nZygote.hessian\nZygote.Buffer\nZygote.forwarddiff"
+},
+
+{
     "location": "profiling/#",
     "page": "Profiling",
     "title": "Profiling",
