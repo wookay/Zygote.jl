@@ -13,7 +13,7 @@ ga('send', 'pageview');
 0.2 - 0.4im
 
 julia&gt; -im*gradient(x -&gt; imag(log(conj(x))), 1+2im)[1] |&gt; conj
--0.2 + 0.4im</code></pre><p>In cases like these, all bets are off. The gradient can only be described by a more complex object; either a 2x2 Jacobian (a generalisation of the Real case, where the second column is now non-zero), or by the two Wengert derivatives (a generalisation of the holomorphic case, where <span>$\frac{∂ f}{∂ \bar z}$</span> is now non-zero). To get these efficiently, as we would a Jacobian, we can just call the backpropagators twice.</p><pre><code class="language-julia">julia&gt; y, back = Zygote.forward(x -&gt; log(conj(x)), 1+2im);
+-0.2 + 0.4im</code></pre><p>In cases like these, all bets are off. The gradient can only be described by a more complex object; either a 2x2 Jacobian (a generalisation of the Real case, where the second column is now non-zero), or by the two Wirtinger derivatives (a generalisation of the holomorphic case, where <span>$\frac{∂ f}{∂ \bar z}$</span> is now non-zero). To get these efficiently, as we would a Jacobian, we can just call the backpropagators twice.</p><pre><code class="language-julia">julia&gt; y, back = Zygote.forward(x -&gt; log(conj(x)), 1+2im);
 
 julia&gt; back(1)
 (0.2 + 0.4im,)
