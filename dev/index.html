@@ -30,7 +30,7 @@ pow (generic function with 1 method)
 julia&gt; gradient(x -&gt; pow(x, 3), 5)
 (75,)
 
-julia&gt; pow2(x, n) = n &lt;= 0 ? 1 : x*pow(x, n-1)
+julia&gt; pow2(x, n) = n &lt;= 0 ? 1 : x*pow2(x, n-1)
 pow2 (generic function with 1 method)
 
 julia&gt; gradient(x -&gt; pow2(x, 3), 5)
