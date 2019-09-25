@@ -14,7 +14,7 @@ ga('send', 'pageview');
 
 julia&gt; -im*gradient(x -&gt; imag(log(x&#39;)), 1+2im)[1] |&gt; conj
 -0.2 + 0.4im</code></pre><p>In cases like these, all bets are off. The gradient can only be described with more information; either a 2x2 Jacobian (a generalisation of the Real case, where the second column is now non-zero), or by the two Wirtinger derivatives (a generalisation of the holomorphic case, where <span>$\frac{∂ f}{∂ z&#39;}$</span> is now non-zero). To get these efficiently, as we would a Jacobian, we can just call the backpropagators twice.</p><pre><code class="language-julia">function jacobi(f, x)
-  y, back = Zygote.forward(f, x)
+  y, back = Zygote.pullback(f, x)
   back(1)[1], back(im)[1]
 end
 
